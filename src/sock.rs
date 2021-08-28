@@ -56,3 +56,9 @@ impl<'socket> UdpSocket<'socket> {
         }
     }
 }
+
+impl Drop for UdpSocket<'_> {
+    fn drop(&mut self) {
+        unsafe { bind::SDLNet_UDP_Close(self.socket.as_ptr()) }
+    }
+}
