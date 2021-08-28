@@ -1,18 +1,13 @@
 //! Servers for creating the connections.
 
 use rich_sdl2_rust::{Result, Sdl, SdlError};
-use std::{
-    ffi::CString,
-    marker::PhantomData,
-    mem::MaybeUninit,
-    net::{Ipv4Addr, SocketAddrV4},
-};
+use std::{ffi::CString, marker::PhantomData, mem::MaybeUninit, net::Ipv4Addr, ptr::NonNull};
 
-use crate::{bind, Net};
+use crate::{bind, conn::TcpConnection, Net};
 
 /// A client to create the connection.
 pub struct NetClient<'net> {
-    socket: SocketAddrV4,
+    address: bind::IPaddress,
     _phantom: PhantomData<&'net Net<'net>>,
 }
 
@@ -33,7 +28,7 @@ impl<'net> NetClient<'net> {
         } else {
             let address = unsafe { address.assume_init() };
             Ok(Self {
-                socket: SocketAddrV4::new(Ipv4Addr::from(address.host), address.port),
+                address,
                 _phantom: PhantomData,
             })
         }
@@ -55,9 +50,15 @@ impl<'net> NetClient<'net> {
         } else {
             let address = unsafe { address.assume_init() };
             Ok(Self {
-                socket: SocketAddrV4::new(Ipv4Addr::from(address.host), address.port),
+                address,
                 _phantom: PhantomData,
             })
         }
+    }
+
+    /// Opens a tcp connection from the client.
+    pub fn open_tcp(&mut self) -> Option<TcpConnection> {
+        let opponent = unsafe { bind::SDLNet_TCP_Open(&mut self.address as *mut _) };
+        NonNull::new(opponent).map(TcpConnection::new)
     }
 }
