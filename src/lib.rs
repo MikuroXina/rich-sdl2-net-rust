@@ -5,7 +5,12 @@
 #![warn(missing_docs)]
 
 use rich_sdl2_rust::Sdl;
-use std::{ffi::CStr, marker::PhantomData, net::Ipv4Addr};
+use std::{
+    ffi::CStr,
+    marker::PhantomData,
+    mem::MaybeUninit,
+    net::{Ipv4Addr, SocketAddrV4},
+};
 
 mod bind;
 pub mod client;
@@ -36,6 +41,23 @@ impl<'sdl> Net<'sdl> {
         };
         let cstr = unsafe { CStr::from_ptr(bind::SDLNet_ResolveIP(&address as *const _)) };
         cstr.to_string_lossy().to_string()
+    }
+
+    /// Returns all the local addresses of this host's network interfaces.
+    pub fn local_addresses(&self) -> Vec<SocketAddrV4> {
+        const MAX_ADDRESSES: usize = 16;
+        let mut addresses = [MaybeUninit::uninit(); MAX_ADDRESSES];
+        let assigned = unsafe {
+            bind::SDLNet_GetLocalAddresses(addresses.as_mut_ptr().cast(), MAX_ADDRESSES as _)
+        };
+        addresses
+            .iter()
+            .take(assigned as usize)
+            .map(|addr| {
+                let addr: bind::IPaddress = unsafe { addr.assume_init() };
+                SocketAddrV4::new(Ipv4Addr::from(addr.host), addr.port)
+            })
+            .collect()
     }
 }
 
