@@ -3,7 +3,7 @@
 use rich_sdl2_rust::{Result, Sdl, SdlError};
 use std::{ffi::CString, marker::PhantomData, mem::MaybeUninit, net::Ipv4Addr, ptr::NonNull};
 
-use crate::{bind, conn::TcpConnection, Net};
+use crate::{bind, conn::TcpConnection, sock::UdpSocket, Net};
 
 /// A client to create the connection.
 pub struct NetClient<'net> {
@@ -60,5 +60,10 @@ impl<'net> NetClient<'net> {
     pub fn open_tcp(&mut self) -> Option<TcpConnection> {
         let opponent = unsafe { bind::SDLNet_TCP_Open(&mut self.address as *mut _) };
         NonNull::new(opponent).map(TcpConnection::new)
+    }
+
+    /// Opens a udp socket from the client.
+    pub fn open_udp(&mut self) -> Result<UdpSocket> {
+        UdpSocket::new(&mut self.address)
     }
 }
