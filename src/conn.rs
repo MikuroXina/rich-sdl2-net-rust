@@ -1,6 +1,10 @@
 //! Connections between client and server.
 
-use std::{marker::PhantomData, ptr::NonNull};
+use std::{
+    marker::PhantomData,
+    net::{Ipv4Addr, SocketAddrV4},
+    ptr::NonNull,
+};
 
 use crate::bind;
 
@@ -16,6 +20,12 @@ impl<'req> TcpConnection<'req> {
             opponent,
             _phantom: PhantomData,
         }
+    }
+
+    /// Returns the socket address of the connected party.
+    pub fn address(&self) -> SocketAddrV4 {
+        let addr = unsafe { &*bind::SDLNet_TCP_GetPeerAddress(self.opponent.as_ptr()) };
+        SocketAddrV4::new(Ipv4Addr::from(addr.host), addr.port)
     }
 }
 
