@@ -8,6 +8,7 @@ use rich_sdl2_rust::Sdl;
 use std::marker::PhantomData;
 
 mod bind;
+pub mod client;
 pub mod server;
 
 /// A root controller for SDL2_net.
