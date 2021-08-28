@@ -3,7 +3,7 @@
 use rich_sdl2_rust::{Result, Sdl, SdlError};
 use std::{marker::PhantomData, mem::MaybeUninit, ptr::NonNull};
 
-use crate::{bind, Net};
+use crate::{bind, conn::TcpConnection, Net};
 
 /// A server to serve the connection.
 pub struct NetServer<'net> {
@@ -54,35 +54,14 @@ impl<'socket> TcpSocket<'socket> {
     }
 
     /// Polls a request from a client, or `None` if no requests received.
-    pub fn poll_req(&'socket self) -> Option<Request<'socket>> {
-        Request::new(self)
+    pub fn try_ack(&'socket self) -> Option<TcpConnection<'socket>> {
+        let opponent = unsafe { bind::SDLNet_TCP_Accept(self.socket.as_ptr()) };
+        NonNull::new(opponent).map(TcpConnection::new)
     }
 }
 
 impl Drop for TcpSocket<'_> {
     fn drop(&mut self) {
         unsafe { bind::SDLNet_TCP_Close(self.socket.as_ptr()) }
-    }
-}
-
-/// A tcp request from a [`TcpSocket`].
-pub struct Request<'req> {
-    opponent: NonNull<bind::_TCPsocket>,
-    _phantom: PhantomData<&'req ()>,
-}
-
-impl<'req> Request<'req> {
-    fn new(tcp: &'req TcpSocket<'req>) -> Option<Request> {
-        let opponent = unsafe { bind::SDLNet_TCP_Accept(tcp.socket.as_ptr()) };
-        NonNull::new(opponent).map(|opponent| Request {
-            opponent,
-            _phantom: PhantomData,
-        })
-    }
-}
-
-impl Drop for Request<'_> {
-    fn drop(&mut self) {
-        unsafe { bind::SDLNet_TCP_Close(self.opponent.as_ptr()) }
     }
 }

@@ -14,6 +14,7 @@ use std::{
 
 mod bind;
 pub mod client;
+pub mod conn;
 pub mod server;
 
 /// A root controller for SDL2_net.
