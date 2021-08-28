@@ -1,12 +1,11 @@
 //! Servers for receiving the connections.
 
+use rich_sdl2_rust::{Result, Sdl, SdlError};
 use std::{
     marker::PhantomData,
     mem::MaybeUninit,
     net::{Ipv4Addr, SocketAddrV4},
 };
-
-use rich_sdl2_rust::{Result, Sdl, SdlError};
 
 use crate::{bind, Net};
 
