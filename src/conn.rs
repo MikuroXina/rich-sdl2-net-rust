@@ -1,6 +1,8 @@
 //! Connections between client and server.
 
+use rich_sdl2_rust::{Sdl, SdlError};
 use std::{
+    io::{self, Read, Write},
     marker::PhantomData,
     net::{Ipv4Addr, SocketAddrV4},
     ptr::NonNull,
@@ -32,5 +34,45 @@ impl<'req> TcpConnection<'req> {
 impl Drop for TcpConnection<'_> {
     fn drop(&mut self) {
         unsafe { bind::SDLNet_TCP_Close(self.opponent.as_ptr()) }
+    }
+}
+
+impl Read for TcpConnection<'_> {
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        let ret = unsafe {
+            bind::SDLNet_TCP_Recv(
+                self.opponent.as_ptr(),
+                buf.as_mut_ptr().cast(),
+                buf.len() as _,
+            )
+        };
+        if ret <= 0 {
+            Err(io::Error::new(
+                io::ErrorKind::Other,
+                SdlError::Others { msg: Sdl::error() },
+            ))
+        } else {
+            Ok(ret as _)
+        }
+    }
+}
+
+impl Write for TcpConnection<'_> {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        let ret = unsafe {
+            bind::SDLNet_TCP_Send(self.opponent.as_ptr(), buf.as_ptr().cast(), buf.len() as _)
+        };
+        if (ret as usize) < buf.len() {
+            Err(io::Error::new(
+                io::ErrorKind::Other,
+                SdlError::Others { msg: Sdl::error() },
+            ))
+        } else {
+            Ok(ret as _)
+        }
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        Ok(())
     }
 }
