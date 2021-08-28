@@ -29,7 +29,7 @@ impl<'sdl> Net<'sdl> {
     }
 
     /// Resolves the ipv4 address to the hostname.
-    pub fn resolve_ipv4(addr: Ipv4Addr) -> String {
+    pub fn resolve_ipv4(&self, addr: Ipv4Addr) -> String {
         let address = bind::IPaddress {
             host: u32::from_ne_bytes(addr.octets()),
             port: 0,
