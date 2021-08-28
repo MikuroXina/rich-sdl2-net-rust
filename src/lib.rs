@@ -5,7 +5,7 @@
 #![warn(missing_docs)]
 
 use rich_sdl2_rust::Sdl;
-use std::marker::PhantomData;
+use std::{ffi::CStr, marker::PhantomData, net::Ipv4Addr};
 
 mod bind;
 pub mod client;
@@ -26,6 +26,16 @@ impl<'sdl> Net<'sdl> {
         Self {
             _phantom: PhantomData,
         }
+    }
+
+    /// Resolves the ipv4 address to the hostname.
+    pub fn resolve_ipv4(addr: Ipv4Addr) -> String {
+        let address = bind::IPaddress {
+            host: u32::from_ne_bytes(addr.octets()),
+            port: 0,
+        };
+        let cstr = unsafe { CStr::from_ptr(bind::SDLNet_ResolveIP(&address as *const _)) };
+        cstr.to_string_lossy().to_string()
     }
 }
 
