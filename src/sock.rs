@@ -36,3 +36,23 @@ impl Drop for TcpSocket<'_> {
         unsafe { bind::SDLNet_TCP_Close(self.socket.as_ptr()) }
     }
 }
+
+/// A udp connection socket for send or receive packets.
+pub struct UdpSocket<'socket> {
+    socket: NonNull<bind::_UDPsocket>,
+    address: &'socket mut bind::IPaddress,
+}
+
+impl<'socket> UdpSocket<'socket> {
+    pub(crate) fn new(address: &'socket mut bind::IPaddress) -> Result<Self> {
+        let ptr = unsafe { bind::SDLNet_UDP_Open(address.port) };
+        if ptr.is_null() {
+            Err(SdlError::Others { msg: Sdl::error() })
+        } else {
+            Ok(Self {
+                socket: NonNull::new(ptr).unwrap(),
+                address,
+            })
+        }
+    }
+}
