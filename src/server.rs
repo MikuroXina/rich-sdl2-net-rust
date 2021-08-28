@@ -1,9 +1,9 @@
 //! Servers for receiving the connections.
 
 use rich_sdl2_rust::{Result, Sdl, SdlError};
-use std::{marker::PhantomData, mem::MaybeUninit, ptr::NonNull};
+use std::{marker::PhantomData, mem::MaybeUninit};
 
-use crate::{bind, conn::TcpConnection, Net};
+use crate::{bind, sock::TcpSocket, Net};
 
 /// A server to serve the connection.
 pub struct NetServer<'net> {
@@ -30,38 +30,6 @@ impl<'net> NetServer<'net> {
 
     /// Opens a tcp connection socket.
     pub fn open_tcp(&'net mut self) -> Result<TcpSocket<'net>> {
-        TcpSocket::new(self)
-    }
-}
-
-/// A tcp connection socket for receive packets.
-pub struct TcpSocket<'socket> {
-    socket: NonNull<bind::_TCPsocket>,
-    _phantom: PhantomData<&'socket mut NetServer<'socket>>,
-}
-
-impl<'socket> TcpSocket<'socket> {
-    fn new(server: &'socket mut NetServer<'socket>) -> Result<Self> {
-        let ptr = unsafe { bind::SDLNet_TCP_Open(&mut server.address as *mut _) };
-        if ptr.is_null() {
-            Err(SdlError::Others { msg: Sdl::error() })
-        } else {
-            Ok(Self {
-                socket: NonNull::new(ptr).unwrap(),
-                _phantom: PhantomData,
-            })
-        }
-    }
-
-    /// Polls a request from a client, or `None` if no requests received.
-    pub fn try_ack(&'socket self) -> Option<TcpConnection<'socket>> {
-        let opponent = unsafe { bind::SDLNet_TCP_Accept(self.socket.as_ptr()) };
-        NonNull::new(opponent).map(TcpConnection::new)
-    }
-}
-
-impl Drop for TcpSocket<'_> {
-    fn drop(&mut self) {
-        unsafe { bind::SDLNet_TCP_Close(self.socket.as_ptr()) }
+        TcpSocket::new(&mut self.address)
     }
 }

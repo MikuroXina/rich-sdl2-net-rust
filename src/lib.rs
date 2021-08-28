@@ -16,6 +16,7 @@ mod bind;
 pub mod client;
 pub mod conn;
 pub mod server;
+pub mod sock;
 
 /// A root controller for SDL2_net.
 pub struct Net<'sdl> {
