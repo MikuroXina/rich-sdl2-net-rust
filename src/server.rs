@@ -1,17 +1,13 @@
 //! Servers for receiving the connections.
 
 use rich_sdl2_rust::{Result, Sdl, SdlError};
-use std::{
-    marker::PhantomData,
-    mem::MaybeUninit,
-    net::{Ipv4Addr, SocketAddrV4},
-};
+use std::{marker::PhantomData, mem::MaybeUninit, ptr::NonNull};
 
 use crate::{bind, Net};
 
 /// A server to serve the connection.
 pub struct NetServer<'net> {
-    socket: SocketAddrV4,
+    address: bind::IPaddress,
     _phantom: PhantomData<&'net Net<'net>>,
 }
 
@@ -23,11 +19,43 @@ impl<'net> NetServer<'net> {
         if ret != 0 {
             Err(SdlError::Others { msg: Sdl::error() })
         } else {
-            let address = unsafe { address.assume_init() };
+            let mut address = unsafe { address.assume_init() };
+            address.port = port;
             Ok(Self {
-                socket: SocketAddrV4::new(Ipv4Addr::from(address.host), port),
+                address,
                 _phantom: PhantomData,
             })
         }
+    }
+
+    /// Opens a tcp connection socket.
+    pub fn open_tcp(&'net mut self) -> Result<TcpSocket<'net>> {
+        TcpSocket::new(self)
+    }
+}
+
+/// A tcp connection socket for receive packets.
+pub struct TcpSocket<'socket> {
+    socket: NonNull<bind::_TCPsocket>,
+    _phantom: PhantomData<&'socket mut NetServer<'socket>>,
+}
+
+impl<'socket> TcpSocket<'socket> {
+    fn new(server: &'socket mut NetServer<'socket>) -> Result<Self> {
+        let ptr = unsafe { bind::SDLNet_TCP_Open(&mut server.address as *mut _) };
+        if ptr.is_null() {
+            Err(SdlError::Others { msg: Sdl::error() })
+        } else {
+            Ok(Self {
+                socket: NonNull::new(ptr).unwrap(),
+                _phantom: PhantomData,
+            })
+        }
+    }
+}
+
+impl Drop for TcpSocket<'_> {
+    fn drop(&mut self) {
+        unsafe { bind::SDLNet_TCP_Close(self.socket.as_ptr()) }
     }
 }
