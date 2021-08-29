@@ -64,7 +64,7 @@ impl<'set, 'net: 'set> SocketSet<'set> {
     }
 
     /// Returns the number of the active sockets in the socket set.
-    pub fn active_sockets(&self, timeout: u32) -> usize {
+    pub fn active_sockets_num(&self, timeout: u32) -> usize {
         let ret = unsafe { bind::SDLNet_CheckSockets(self.ptr.as_ptr(), timeout) };
         if ret < 0 {
             Sdl::error_then_panic("get active sockets");
