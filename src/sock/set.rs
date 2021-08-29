@@ -19,8 +19,11 @@ pub struct SocketSet<'net> {
 
 impl<'net> SocketSet<'net> {
     /// Constructs a new socket set.
-    pub fn new(net: &'net Net<'net>) -> Self {
-        Self::with_capacity(net, 1)
+    pub fn new(_net: &'net Net<'net>) -> Self {
+        Self {
+            ptr: NonNull::dangling(),
+            sockets: Vec::new(),
+        }
     }
 
     /// Constructs a new socket set with the capacity.
@@ -41,13 +44,31 @@ impl<'net> SocketSet<'net> {
         ret as usize
     }
 
+    /// Reserves capacity for at least `additional` more elements.
+    pub fn reserve(&mut self, additional: usize) {
+        if self.sockets.capacity() != 0 {
+            unsafe { bind::SDLNet_FreeSocketSet(self.ptr.as_ptr()) }
+        }
+        self.sockets.reserve(additional);
+        let ptr = unsafe { bind::SDLNet_AllocSocketSet(self.sockets.capacity() as _) };
+        self.ptr = NonNull::new(ptr).unwrap_or_else(|| Sdl::error_then_panic("alloc socket set"));
+    }
+
     /// Appends a tcp socket.
     pub fn push_tcp(&mut self, tcp: TcpSocket<'net>) {
+        if self.sockets.len() == self.sockets.capacity() {
+            self.reserve(1);
+        }
+        let _ = unsafe { bind::SDLNet_AddSocket(self.ptr.as_ptr(), tcp.socket.as_ptr().cast()) };
         self.sockets.push(GeneralSocket::Tcp(tcp));
     }
 
     /// Appends a udp socket.
     pub fn push_udp(&mut self, udp: UdpSocket<'net>) {
+        if self.sockets.len() == self.sockets.capacity() {
+            self.reserve(1);
+        }
+        let _ = unsafe { bind::SDLNet_AddSocket(self.ptr.as_ptr(), udp.socket.as_ptr().cast()) };
         self.sockets.push(GeneralSocket::Udp(udp));
     }
 }
