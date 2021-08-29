@@ -37,6 +37,8 @@ impl Drop for TcpSocket<'_> {
     }
 }
 
+const MAX_UDP_CHANNELS: u32 = 32;
+
 /// A udp connection socket for send or receive packets.
 pub struct UdpSocket<'socket> {
     socket: NonNull<bind::_UDPsocket>,
@@ -56,10 +58,17 @@ impl<'socket> UdpSocket<'socket> {
         }
     }
 
-    /// Returns the channels of the socket.
+    /// Returns the specific channel of the socket if exists.
+    pub fn channel(&self, index: u32) -> Option<UdpChannel> {
+        (index <= MAX_UDP_CHANNELS).then(|| UdpChannel {
+            id: index as _,
+            socket: self,
+        })
+    }
+
+    /// Returns all the channels of the socket.
     pub fn channels(&self) -> Vec<UdpChannel> {
-        const MAX_UDP_ADDRESSES: u32 = 4;
-        (0..MAX_UDP_ADDRESSES)
+        (0..MAX_UDP_CHANNELS)
             .map(|id| UdpChannel {
                 id: id as _,
                 socket: self,
