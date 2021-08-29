@@ -1,0 +1,3 @@
+(function() {var implementors = {};
+implementors["rich_sdl2_net_rust"] = [{"text":"impl&lt;'chan&gt; <a class=\"trait\" href=\"https://doc.rust-lang.org/1.54.0/core/clone/trait.Clone.html\" title=\"trait core::clone::Clone\">Clone</a> for <a class=\"struct\" href=\"rich_sdl2_net_rust/sock/struct.UdpChannel.html\" title=\"struct rich_sdl2_net_rust::sock::UdpChannel\">UdpChannel</a>&lt;'chan&gt;","synthetic":false,"types":["rich_sdl2_net_rust::sock::UdpChannel"]}];
+if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

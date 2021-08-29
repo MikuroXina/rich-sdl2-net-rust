@@ -1,0 +1,6 @@
+/target
+Cargo.lock
+
+# sub repositories
+/SDL2
+/SDL2_net

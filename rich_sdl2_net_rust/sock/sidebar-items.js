@@ -1,0 +1,1 @@
+initSidebarItems({"mod":[["set","Socket management by a socket set."]],"struct":[["TcpSocket","A tcp connection socket for receive packets."],["UdpChannel","A channel of a udp socket to matchup packets to specific clients easier."],["UdpSocket","A udp connection socket for send or receive packets."]]});

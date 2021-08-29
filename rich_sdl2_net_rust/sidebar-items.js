@@ -1,0 +1,1 @@
+initSidebarItems({"mod":[["client","Servers for creating the connections."],["conn","Connections between client and server."],["server","Servers for receiving the connections."],["sock","Socket to create connection or send a datagram."]],"struct":[["Net","A root controller for SDL2_net."]]});

@@ -1,0 +1,20 @@
+[package]
+name = "rich-sdl2-net-rust"
+version = "0.1.0"
+authors = ["MikuroXina <ryosukadnak@gmail.com>"]
+edition = "2018"
+description = "The sdl_net 2.0 wrapper for Rust."
+repository = "https://github.com/MikuroXina/rich-sdl2-net-rust"
+documentation = "https://mikuroxina.github.io/rich-sdl2-net-rust/rich_sdl2_net_rust/"
+license = "Apache-2.0"
+keywords = ["sdl2", "wrapper", "binding"]
+categories = ["network-programming"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+rich-sdl2-rust = "0.6.4"
+
+[build-dependencies]
+bindgen = "0.59.1"
+git2 = "0.13.21"

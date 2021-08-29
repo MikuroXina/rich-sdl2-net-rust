@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["GeneralSocket","A tcp/udp socket to register to [`SocketSet`]."]],"struct":[["SocketSet","A socket set to observe a socket."]]});
