@@ -3,7 +3,7 @@
 use rich_sdl2_rust::{Result, Sdl, SdlError};
 use std::{
     cell::Cell,
-    io::{self, Write},
+    io::{self, Read, Write},
     marker::PhantomData,
     net::{Ipv4Addr, SocketAddrV4},
     os::raw::c_int,
@@ -164,5 +164,28 @@ impl Write for UdpChannel<'_> {
 
     fn flush(&mut self) -> io::Result<()> {
         Ok(())
+    }
+}
+
+impl Read for UdpChannel<'_> {
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        let mut packet = bind::UDPpacket {
+            channel: self.id,
+            data: buf.as_mut_ptr(),
+            len: buf.len() as _,
+            maxlen: buf.len() as _,
+            status: 0,
+            address: bind::IPaddress { host: 0, port: 0 },
+        };
+        let ret =
+            unsafe { bind::SDLNet_UDP_Recv(self.socket.socket.as_ptr(), &mut packet as *mut _) };
+        if ret < 0 {
+            Err(io::Error::new(
+                io::ErrorKind::Other,
+                SdlError::Others { msg: Sdl::error() },
+            ))
+        } else {
+            Ok(ret as usize)
+        }
     }
 }
