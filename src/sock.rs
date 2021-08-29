@@ -136,7 +136,7 @@ impl<'chan> UdpChannel<'chan> {
         let ptr = unsafe { bind::SDLNet_UDP_GetPeerAddress(self.socket.socket.as_ptr(), self.id) };
         (!ptr.is_null()).then(|| {
             let address = unsafe { &*ptr };
-            SocketAddrV4::new(Ipv4Addr::from(address.host), address.port)
+            SocketAddrV4::new(Ipv4Addr::from(u32::from_be(address.host)), address.port)
         })
     }
 }

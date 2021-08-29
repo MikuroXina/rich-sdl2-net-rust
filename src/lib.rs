@@ -57,7 +57,7 @@ impl<'sdl> Net<'sdl> {
             .take(assigned as usize)
             .map(|addr| {
                 let addr: bind::IPaddress = unsafe { addr.assume_init() };
-                SocketAddrV4::new(Ipv4Addr::from(addr.host), addr.port)
+                SocketAddrV4::new(Ipv4Addr::from(u32::from_be(addr.host)), addr.port)
             })
             .collect()
     }

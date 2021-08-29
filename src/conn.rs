@@ -27,7 +27,7 @@ impl<'req> TcpConnection<'req> {
     /// Returns the socket address of the connected party.
     pub fn address(&self) -> SocketAddrV4 {
         let addr = unsafe { &*bind::SDLNet_TCP_GetPeerAddress(self.opponent.as_ptr()) };
-        SocketAddrV4::new(Ipv4Addr::from(addr.host), addr.port)
+        SocketAddrV4::new(Ipv4Addr::from(u32::from_be(addr.host)), addr.port)
     }
 }
 
