@@ -1,10 +1,15 @@
 //! Socket management by a socket set.
 
 use rich_sdl2_rust::Sdl;
-use std::ptr::NonNull;
+use std::{os::raw::c_int, ptr::NonNull};
 
 use super::{TcpSocket, UdpSocket};
 use crate::{bind, Net};
+
+extern "C" {
+    // int _SDLNet_SocketReady(SDLNet_GenericSocket sock);
+    fn _SDLNet_SocketReady(sock: bind::SDLNet_GenericSocket) -> c_int;
+}
 
 /// A tcp/udp socket to register to [`SocketSet`].
 pub enum GeneralSocket<'net> {
@@ -64,6 +69,14 @@ impl<'set, 'net: 'set> SocketSet<'set> {
             Sdl::error_then_panic("get active sockets");
         }
         ret as usize
+    }
+
+    /// Returns all the active sockets in the set.
+    pub fn active_sockets(&self) -> impl Iterator<Item = &GeneralSocket> {
+        self.active_sockets_num(0);
+        self.sockets
+            .iter()
+            .filter(|socket| unsafe { _SDLNet_SocketReady(socket.as_general_ptr()) != 0 })
     }
 
     /// Reserves capacity for at least `additional` more elements.
