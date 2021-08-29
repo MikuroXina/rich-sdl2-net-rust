@@ -2,6 +2,7 @@
 
 use rich_sdl2_rust::{Result, Sdl, SdlError};
 use std::{
+    cell::Cell,
     io::{self, Write},
     marker::PhantomData,
     net::{Ipv4Addr, SocketAddrV4},
@@ -66,19 +67,13 @@ impl<'socket> UdpSocket<'socket> {
 
     /// Returns the specific channel of the socket if exists.
     pub fn channel(&self, index: u32) -> Option<UdpChannel> {
-        (index <= MAX_UDP_CHANNELS).then(|| UdpChannel {
-            id: index as _,
-            socket: self,
-        })
+        (index <= MAX_UDP_CHANNELS).then(|| UdpChannel::new(index as _, self))
     }
 
     /// Returns all the channels of the socket.
     pub fn channels(&self) -> Vec<UdpChannel> {
         (0..MAX_UDP_CHANNELS)
-            .map(|id| UdpChannel {
-                id: id as _,
-                socket: self,
-            })
+            .map(|id| UdpChannel::new(id as _, self))
             .collect()
     }
 }
@@ -94,11 +89,20 @@ impl Drop for UdpSocket<'_> {
 pub struct UdpChannel<'chan> {
     id: c_int,
     socket: &'chan UdpSocket<'chan>,
+    bound_addresses: Cell<usize>,
 }
 
 impl<'chan> UdpChannel<'chan> {
+    fn new(id: c_int, socket: &'chan UdpSocket<'chan>) -> Self {
+        Self {
+            id,
+            socket,
+            bound_addresses: Cell::new(0),
+        }
+    }
+
     /// Binds the socket address to the channel, or `Err` on failure.
-    pub fn bind_channel(&self, address: SocketAddrV4) -> Result<()> {
+    pub fn bind(&self, address: SocketAddrV4) -> Result<()> {
         let address = bind::IPaddress {
             host: u32::from_ne_bytes(address.ip().octets()),
             port: address.port(),
@@ -109,6 +113,8 @@ impl<'chan> UdpChannel<'chan> {
         if ret < 0 {
             Err(SdlError::Others { msg: Sdl::error() })
         } else {
+            let count = self.bound_addresses.get() + 1;
+            self.bound_addresses.set(count);
             Ok(())
         }
     }
@@ -116,6 +122,11 @@ impl<'chan> UdpChannel<'chan> {
     /// Unbinds the socket address from the channel.
     pub fn unbind(&self) {
         unsafe { bind::SDLNet_UDP_Unbind(self.socket.socket.as_ptr(), self.id) }
+    }
+
+    /// Returns the length of the bound addresses.
+    pub fn bound_len(&self) -> usize {
+        self.bound_addresses.get()
     }
 
     /// Returns the first bound socket address of the channel.
