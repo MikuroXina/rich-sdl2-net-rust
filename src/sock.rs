@@ -1,7 +1,12 @@
 //! Socket to create connection or send a datagram.
 
 use rich_sdl2_rust::{Result, Sdl, SdlError};
-use std::{marker::PhantomData, net::SocketAddrV4, os::raw::c_int, ptr::NonNull};
+use std::{
+    marker::PhantomData,
+    net::{Ipv4Addr, SocketAddrV4},
+    os::raw::c_int,
+    ptr::NonNull,
+};
 
 use crate::{bind, conn::TcpConnection};
 
@@ -110,5 +115,14 @@ impl<'chan> UdpChannel<'chan> {
     /// Unbinds the socket address from the channel.
     pub fn unbind(&self) {
         unsafe { bind::SDLNet_UDP_Unbind(self.socket.socket.as_ptr(), self.id) }
+    }
+
+    /// Returns the first bound socket address of the channel.
+    pub fn first_bound(&self) -> Option<SocketAddrV4> {
+        let ptr = unsafe { bind::SDLNet_UDP_GetPeerAddress(self.socket.socket.as_ptr(), self.id) };
+        (!ptr.is_null()).then(|| {
+            let address = unsafe { &*ptr };
+            SocketAddrV4::new(Ipv4Addr::from(address.host), address.port)
+        })
     }
 }
