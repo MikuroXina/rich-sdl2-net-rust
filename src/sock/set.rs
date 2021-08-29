@@ -17,7 +17,7 @@ pub struct SocketSet<'net> {
     sockets: Vec<GeneralSocket<'net>>,
 }
 
-impl<'net> SocketSet<'net> {
+impl<'set, 'net: 'set> SocketSet<'set> {
     /// Constructs a new socket set.
     pub fn new(_net: &'net Net<'net>) -> Self {
         Self {
@@ -55,7 +55,11 @@ impl<'net> SocketSet<'net> {
     }
 
     /// Appends a tcp socket.
-    pub fn push_tcp(&mut self, tcp: TcpSocket<'net>) {
+    pub fn push_tcp<'socket>(&mut self, tcp: TcpSocket<'socket>)
+    where
+        'net: 'socket,
+        'socket: 'set,
+    {
         if self.sockets.len() == self.sockets.capacity() {
             self.reserve(1);
         }
@@ -64,7 +68,11 @@ impl<'net> SocketSet<'net> {
     }
 
     /// Appends a udp socket.
-    pub fn push_udp(&mut self, udp: UdpSocket<'net>) {
+    pub fn push_udp<'socket>(&mut self, udp: UdpSocket<'socket>)
+    where
+        'net: 'socket,
+        'socket: 'set,
+    {
         if self.sockets.len() == self.sockets.capacity() {
             self.reserve(1);
         }
