@@ -1,14 +1,20 @@
 //! Socket management by a socket set.
 
 use rich_sdl2_rust::Sdl;
-use std::{marker::PhantomData, ptr::NonNull};
+use std::ptr::NonNull;
 
+use super::{TcpSocket, UdpSocket};
 use crate::{bind, Net};
+
+enum GeneralSocket<'net> {
+    Tcp(TcpSocket<'net>),
+    Udp(UdpSocket<'net>),
+}
 
 /// A socket set to observe a socket.
 pub struct SocketSet<'net> {
     ptr: NonNull<bind::_SDLNet_SocketSet>,
-    _phantom: PhantomData<&'net ()>,
+    sockets: Vec<GeneralSocket<'net>>,
 }
 
 impl<'net> SocketSet<'net> {
@@ -22,7 +28,7 @@ impl<'net> SocketSet<'net> {
         let ptr = unsafe { bind::SDLNet_AllocSocketSet(cap as _) };
         Self {
             ptr: NonNull::new(ptr).unwrap_or_else(|| Sdl::error_then_panic("alloc socket set")),
-            _phantom: PhantomData,
+            sockets: Vec::with_capacity(cap),
         }
     }
 
@@ -33,6 +39,16 @@ impl<'net> SocketSet<'net> {
             Sdl::error_then_panic("get active sockets");
         }
         ret as usize
+    }
+
+    /// Appends a tcp socket.
+    pub fn push_tcp(&mut self, tcp: TcpSocket<'net>) {
+        self.sockets.push(GeneralSocket::Tcp(tcp));
+    }
+
+    /// Appends a udp socket.
+    pub fn push_udp(&mut self, udp: UdpSocket<'net>) {
+        self.sockets.push(GeneralSocket::Udp(udp));
     }
 }
 
