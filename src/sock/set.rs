@@ -14,6 +14,15 @@ pub enum GeneralSocket<'net> {
     Udp(UdpSocket<'net>),
 }
 
+impl GeneralSocket<'_> {
+    fn as_general_ptr(&self) -> bind::SDLNet_GenericSocket {
+        match self {
+            GeneralSocket::Tcp(socket) => socket.socket.as_ptr().cast(),
+            GeneralSocket::Udp(socket) => socket.socket.as_ptr().cast(),
+        }
+    }
+}
+
 impl PartialEq for GeneralSocket<'_> {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
@@ -76,15 +85,7 @@ impl<'set, 'net: 'set> SocketSet<'set> {
         if self.sockets.len() == self.sockets.capacity() {
             self.reserve(1);
         }
-        let _ = unsafe {
-            bind::SDLNet_AddSocket(
-                self.ptr.as_ptr(),
-                match &socket {
-                    GeneralSocket::Tcp(socket) => socket.socket.as_ptr().cast(),
-                    GeneralSocket::Udp(socket) => socket.socket.as_ptr().cast(),
-                },
-            )
-        };
+        let _ = unsafe { bind::SDLNet_AddSocket(self.ptr.as_ptr(), socket.as_general_ptr()) };
         self.sockets.push(socket);
     }
 
@@ -96,11 +97,9 @@ impl<'set, 'net: 'set> SocketSet<'set> {
             .enumerate()
             .position(|(_, e)| e == socket)
         {
-            let ptr = match &self.sockets[found] {
-                GeneralSocket::Tcp(found) => found.socket.as_ptr().cast(),
-                GeneralSocket::Udp(found) => found.socket.as_ptr().cast(),
+            let _ = unsafe {
+                bind::SDLNet_DelSocket(self.ptr.as_ptr(), self.sockets[found].as_general_ptr())
             };
-            let _ = unsafe { bind::SDLNet_DelSocket(self.ptr.as_ptr(), ptr) };
             self.sockets.remove(found);
         }
     }
