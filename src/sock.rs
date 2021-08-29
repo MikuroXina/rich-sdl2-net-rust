@@ -12,6 +12,8 @@ use std::{
 
 use crate::{bind, conn::TcpConnection};
 
+pub mod set;
+
 /// A tcp connection socket for receive packets.
 pub struct TcpSocket<'socket> {
     socket: NonNull<bind::_TCPsocket>,
