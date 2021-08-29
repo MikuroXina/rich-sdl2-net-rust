@@ -6,8 +6,11 @@ use std::ptr::NonNull;
 use super::{TcpSocket, UdpSocket};
 use crate::{bind, Net};
 
-enum GeneralSocket<'net> {
+/// A tcp/udp socket to register to [`SocketSet`].
+pub enum GeneralSocket<'net> {
+    /// A tcp socket.
     Tcp(TcpSocket<'net>),
+    /// An udp socket.
     Udp(UdpSocket<'net>),
 }
 
@@ -16,24 +19,6 @@ impl PartialEq for GeneralSocket<'_> {
         match (self, other) {
             (Self::Tcp(l0), Self::Tcp(r0)) => l0.socket == r0.socket,
             (Self::Udp(l0), Self::Udp(r0)) => l0.socket == r0.socket,
-            _ => false,
-        }
-    }
-}
-
-impl PartialEq<TcpSocket<'_>> for GeneralSocket<'_> {
-    fn eq(&self, other: &TcpSocket<'_>) -> bool {
-        match self {
-            Self::Tcp(l0) => l0.socket == other.socket,
-            _ => false,
-        }
-    }
-}
-
-impl PartialEq<UdpSocket<'_>> for GeneralSocket<'_> {
-    fn eq(&self, other: &UdpSocket<'_>) -> bool {
-        match self {
-            Self::Udp(l0) => l0.socket == other.socket,
             _ => false,
         }
     }
@@ -82,8 +67,8 @@ impl<'set, 'net: 'set> SocketSet<'set> {
         self.ptr = NonNull::new(ptr).unwrap_or_else(|| Sdl::error_then_panic("alloc socket set"));
     }
 
-    /// Appends a tcp socket.
-    pub fn push_tcp<'socket>(&mut self, tcp: TcpSocket<'socket>)
+    /// Appends a tcp/udp socket.
+    pub fn push<'socket>(&mut self, socket: GeneralSocket<'socket>)
     where
         'net: 'socket,
         'socket: 'set,
@@ -91,43 +76,31 @@ impl<'set, 'net: 'set> SocketSet<'set> {
         if self.sockets.len() == self.sockets.capacity() {
             self.reserve(1);
         }
-        let _ = unsafe { bind::SDLNet_AddSocket(self.ptr.as_ptr(), tcp.socket.as_ptr().cast()) };
-        self.sockets.push(GeneralSocket::Tcp(tcp));
+        let _ = unsafe {
+            bind::SDLNet_AddSocket(
+                self.ptr.as_ptr(),
+                match &socket {
+                    GeneralSocket::Tcp(socket) => socket.socket.as_ptr().cast(),
+                    GeneralSocket::Udp(socket) => socket.socket.as_ptr().cast(),
+                },
+            )
+        };
+        self.sockets.push(socket);
     }
 
-    /// Removes a tcp socket.
-    pub fn remove_tcp(&mut self, tcp: &TcpSocket) {
-        if let Some(found) = self.sockets.iter().enumerate().position(|(_, e)| e == tcp) {
-            if let GeneralSocket::Tcp(found) = &self.sockets[found] {
-                let _ = unsafe {
-                    bind::SDLNet_DelSocket(self.ptr.as_ptr(), found.socket.as_ptr().cast())
-                };
-            }
-            self.sockets.remove(found);
-        }
-    }
-
-    /// Appends a udp socket.
-    pub fn push_udp<'socket>(&mut self, udp: UdpSocket<'socket>)
-    where
-        'net: 'socket,
-        'socket: 'set,
-    {
-        if self.sockets.len() == self.sockets.capacity() {
-            self.reserve(1);
-        }
-        let _ = unsafe { bind::SDLNet_AddSocket(self.ptr.as_ptr(), udp.socket.as_ptr().cast()) };
-        self.sockets.push(GeneralSocket::Udp(udp));
-    }
-
-    /// Removes a tcp socket.
-    pub fn remove_udp(&mut self, tcp: &UdpSocket) {
-        if let Some(found) = self.sockets.iter().enumerate().position(|(_, e)| e == tcp) {
-            if let GeneralSocket::Udp(found) = &self.sockets[found] {
-                let _ = unsafe {
-                    bind::SDLNet_DelSocket(self.ptr.as_ptr(), found.socket.as_ptr().cast())
-                };
-            }
+    /// Removes a registered socket.
+    pub fn remove(&mut self, socket: &GeneralSocket) {
+        if let Some(found) = self
+            .sockets
+            .iter()
+            .enumerate()
+            .position(|(_, e)| e == socket)
+        {
+            let ptr = match &self.sockets[found] {
+                GeneralSocket::Tcp(found) => found.socket.as_ptr().cast(),
+                GeneralSocket::Udp(found) => found.socket.as_ptr().cast(),
+            };
+            let _ = unsafe { bind::SDLNet_DelSocket(self.ptr.as_ptr(), ptr) };
             self.sockets.remove(found);
         }
     }
