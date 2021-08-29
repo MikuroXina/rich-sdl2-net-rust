@@ -63,7 +63,7 @@ impl<'set, 'net: 'set> SocketSet<'set> {
         }
     }
 
-    /// Returns the number of the active sockets in the socket set.
+    /// Returns the number of the active sockets in the socket set. Await `timeout` milliseconds until a socket become active.
     pub fn active_sockets_num(&self, timeout: u32) -> usize {
         let ret = unsafe { bind::SDLNet_CheckSockets(self.ptr.as_ptr(), timeout) };
         if ret < 0 {
