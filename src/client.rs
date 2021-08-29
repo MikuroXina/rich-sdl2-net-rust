@@ -64,6 +64,6 @@ impl<'net> NetClient<'net> {
 
     /// Opens a udp socket from the client.
     pub fn open_udp(&mut self) -> Result<UdpSocket> {
-        UdpSocket::new(&mut self.address)
+        UdpSocket::new(self.address.port)
     }
 }
