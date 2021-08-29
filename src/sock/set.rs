@@ -11,6 +11,34 @@ enum GeneralSocket<'net> {
     Udp(UdpSocket<'net>),
 }
 
+impl PartialEq for GeneralSocket<'_> {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Tcp(l0), Self::Tcp(r0)) => l0.socket == r0.socket,
+            (Self::Udp(l0), Self::Udp(r0)) => l0.socket == r0.socket,
+            _ => false,
+        }
+    }
+}
+
+impl PartialEq<TcpSocket<'_>> for GeneralSocket<'_> {
+    fn eq(&self, other: &TcpSocket<'_>) -> bool {
+        match self {
+            Self::Tcp(l0) => l0.socket == other.socket,
+            _ => false,
+        }
+    }
+}
+
+impl PartialEq<UdpSocket<'_>> for GeneralSocket<'_> {
+    fn eq(&self, other: &UdpSocket<'_>) -> bool {
+        match self {
+            Self::Udp(l0) => l0.socket == other.socket,
+            _ => false,
+        }
+    }
+}
+
 /// A socket set to observe a socket.
 pub struct SocketSet<'net> {
     ptr: NonNull<bind::_SDLNet_SocketSet>,
@@ -67,6 +95,18 @@ impl<'set, 'net: 'set> SocketSet<'set> {
         self.sockets.push(GeneralSocket::Tcp(tcp));
     }
 
+    /// Removes a tcp socket.
+    pub fn remove_tcp(&mut self, tcp: &TcpSocket) {
+        if let Some(found) = self.sockets.iter().enumerate().position(|(_, e)| e == tcp) {
+            if let GeneralSocket::Tcp(found) = &self.sockets[found] {
+                let _ = unsafe {
+                    bind::SDLNet_DelSocket(self.ptr.as_ptr(), found.socket.as_ptr().cast())
+                };
+            }
+            self.sockets.remove(found);
+        }
+    }
+
     /// Appends a udp socket.
     pub fn push_udp<'socket>(&mut self, udp: UdpSocket<'socket>)
     where
@@ -78,6 +118,18 @@ impl<'set, 'net: 'set> SocketSet<'set> {
         }
         let _ = unsafe { bind::SDLNet_AddSocket(self.ptr.as_ptr(), udp.socket.as_ptr().cast()) };
         self.sockets.push(GeneralSocket::Udp(udp));
+    }
+
+    /// Removes a tcp socket.
+    pub fn remove_udp(&mut self, tcp: &UdpSocket) {
+        if let Some(found) = self.sockets.iter().enumerate().position(|(_, e)| e == tcp) {
+            if let GeneralSocket::Udp(found) = &self.sockets[found] {
+                let _ = unsafe {
+                    bind::SDLNet_DelSocket(self.ptr.as_ptr(), found.socket.as_ptr().cast())
+                };
+            }
+            self.sockets.remove(found);
+        }
     }
 }
 
