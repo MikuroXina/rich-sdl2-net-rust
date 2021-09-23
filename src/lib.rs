@@ -12,6 +12,8 @@ use std::{
     net::{Ipv4Addr, SocketAddrV4},
 };
 
+/// Rust FFI to `SDL_net.h`
+#[allow(warnings)]
 mod bind;
 pub mod client;
 pub mod conn;
