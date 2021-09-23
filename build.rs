@@ -25,7 +25,7 @@ fn main() {
         .output()
         .expect("failed to install");
 
-    let sdl_net_dir = root.join("SDL2_mixer");
+    let sdl_net_dir = root.join("SDL2_net");
     let _ = Repository::clone("https://github.com/libsdl-org/SDL_net", &sdl_net_dir);
     let _ = process::Command::new("./configure")
         .arg(format!("--prefix={}", root_dir))
@@ -58,7 +58,7 @@ fn main() {
     let bindings = bindgen::Builder::default()
         .header("wrapper.h")
         .clang_arg(&format!("-I{}/SDL2/include", root_dir))
-        .clang_arg(&format!("-I{}/SDL2_mixer", root_dir))
+        .clang_arg(&format!("-I{}/SDL2_net", root_dir))
         .allowlist_function("SDLNet_.*")
         .allowlist_type("SDLNet_.*")
         .allowlist_var("SDLNet_.*")
