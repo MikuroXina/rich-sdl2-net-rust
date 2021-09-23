@@ -1,1 +1,1 @@
-#include "SDL2_net/SDL_net.h"
+#include <SDL_net.h>
